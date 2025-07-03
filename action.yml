@@ -1,0 +1,48 @@
+name: "Inclui comentário (Composite)"
+description: "Inclui um comentário em uma issue ou pull request do GitHub. (Composite)"
+author: "Lucas Lima"
+inputs:
+  GITHUB_TOKEN:
+    description: 'Token do GitHub'
+    required: true
+  issue-id:
+    description: 'ID do issue ou pull request'
+    required: true
+  comment:
+    description: 'Comentário a ser adicionado'
+    required: true
+outputs:
+  comment-id:
+    description: 'ID do comentário criado'
+    value: ${{ steps.comment-action.outputs.comment-id }}
+runs:
+  using: "composite"
+  steps:
+    - name: Adicionando comentário
+      shell: bash
+      id: comment-action
+      env:
+        GITHUB_TOKEN: ${{ inputs.GITHUB_TOKEN }}
+        ISSUE_ID: ${{ inputs.issue-id }}
+        COMMENT: ${{ inputs.comment }}
+      run: |
+        GITHUB_TOKEN=$GITHUB_TOKEN
+        ISSUE_ID=$ISSUE_ID
+        COMMENT=$COMMENT
+
+        # Inicialize o cliente do GitHub
+        response=$(curl -s -X POST -H "Authorization: token ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${ISSUE_ID}/comments \
+            -d "{\"body\": \"${COMMENT}\"}")
+
+        # Obtenha o ID do comentário criado
+        comment_id=$(echo $response | jq -r .id)
+
+        echo 
+
+        # Define o output com o ID do comentário
+
+        echo "comment-id=$(echo $comment_id)" >> $GITHUB_OUTPUT
+
+        echo "Comentário adicionado com sucesso! ID do comentário: $comment_id"
